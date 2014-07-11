@@ -279,6 +279,7 @@ class MFtpAuth:
         passWordConf = base64.b64encode(str(r['Password']))
         settings.setValue(userNameConf,passWordConf)
         settings.sync()
+        #print "Save confi %s" % settings.fileName()
         if os.path.exists(settings.fileName()):
             os.chmod(settings.fileName(),stat.S_IRUSR | stat.S_IWUSR)
     
@@ -300,6 +301,8 @@ class MFtpAuth:
 
         settings = QSettings("OSoftWare", "MFTP")
         groups = settings.childGroups()
+        if platform.system() == 'Darwin':
+            groups.removeAt(len(groups) - 1)   
         if siteNameConf is None and len(groups) == 1:
             siteNameConf = groups[0]
             try:
@@ -474,16 +477,16 @@ class MFtpGUI(QMainWindow):
         self.tbrMain.addAction(self.btnDownload)
         self.tbrMain.addAction(self.btnRefresh)
         
+        self.setUnifiedTitleAndToolBarOnMac(True)
         ### Main
+        self.spliMain = QSplitter(Qt.Vertical)
+        
         self.lstFiles = QListWidget(self)
-        self.setCentralWidget(self.lstFiles)
- 
-        ### logging
-        dockLog = QDockWidget("Log", self)
-        dockLog.setAllowedAreas(Qt.BottomDockWidgetArea)
-        self.txtLog = MFTextEdit(dockLog)
-        dockLog.setWidget(self.txtLog)
-        self.addDockWidget(Qt.BottomDockWidgetArea, dockLog)       
+        self.txtLog = MFTextEdit(self)
+        self.spliMain.addWidget(self.lstFiles)
+        self.spliMain.addWidget(self.txtLog)
+        self.setCentralWidget(self.spliMain)
+       
          
         ### status
         
