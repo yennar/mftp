@@ -423,7 +423,7 @@ class MFtpGUI(QMainWindow):
         self.lblMessage.setFrameStyle(QFrame.NoFrame)
         self.lblInfo = QLabel()
         self.lblInfo.setFrameStyle(QFrame.NoFrame)
-        self.lblInfo.setAlignment(Qt.AlignRight)
+        self.lblInfo.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.statusBar().addPermanentWidget(self.lblMessage,1)
         self.statusBar().addPermanentWidget(self.prgData,1)
         self.statusBar().addPermanentWidget(self.lblInfo,2)
