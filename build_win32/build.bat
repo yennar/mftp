@@ -2,6 +2,8 @@
 copy ..\mftp.py .\
 copy ..\mftp.qrc .\
 copy ..\ui_utils.py .\
+mkdir res
+copy ..\res\* .\
 pyrcc4 mftp.qrc > mftp_res.py
 python build_exe.py
 ..\tools\upx dist\mftp.exe
