@@ -420,10 +420,12 @@ class MFtpGUI(QMainWindow):
         
         self.prgData = QProgressBar()
         self.lblMessage = QLabel()
-        self.lblMessage.setFrameStyle(QFrame.Panel | QFrame.Sunken)
+        self.lblMessage.setFrameStyle(QFrame.NoFrame)
+        t = QLabel()
+        t.setFrameStyle(QFrame.NoFrame)
         self.statusBar().addPermanentWidget(self.lblMessage,1)
         self.statusBar().addPermanentWidget(self.prgData,1)
-        self.statusBar().addPermanentWidget(QLabel(),2)
+        self.statusBar().addPermanentWidget(t,2)
         self.lblMessage.setText("Ready")
         ### Window
         self.setWindowTitle("MFTP")
