@@ -430,7 +430,7 @@ class MFtpGUI(QMainWindow):
         self.lblMessage.setText("Ready")
         ### Window
         self.setWindowTitle("MFTP")
-        self.resize(720,576)
+        self.resize(480,380)
         
         ### Core        
         self.mftpCore = MFtpCore()
