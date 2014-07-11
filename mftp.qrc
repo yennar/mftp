@@ -1,0 +1,10 @@
+ <!DOCTYPE RCC><RCC version="1.0">
+ <qresource>
+     <file alias="connect.png">res/connect.png</file>
+     <file alias="disconnect.png">res/disconnect.png</file>
+     <file alias="download.png">res/page_white_put.png</file>
+     <file alias="upload.png">res/page_white_get.png</file>
+     <file alias="refresh.png">res/arrow_rotate_clockwise.png</file>
+     <file alias="account.png">res/user.png</file>
+ </qresource>
+ </RCC>
