@@ -260,7 +260,15 @@ class MFtpCore(QObject):
             else:
                 self.log.emit("[~] Out of date %s" % filename)
         self.listupdate.emit(listfile_info)
-        self.filelist = filelist_new                      
+        self.filelist = filelist_new
+    def doPrintList(self):
+        print "\n"
+        for line in self.filelist.split("\n"):
+            item = line.split("\t")
+            if len(item) !=2:
+                continue
+            filename = item[0]
+            print filename                    
 
 class MFtpAuth:
     
@@ -475,12 +483,18 @@ class MFtpGUI(QMainWindow):
         else:
             self.onLog("Please Select Item")
             return
-            
-        localFileName = QFileDialog.getSaveFileName(self,"Save File",serverFileName,"All Files (*.*)")
+        if platform.system() == 'Darwin':
+            localFileName = QFileDialog.getExistingDirectory(self,"Save File",
+                QDesktopServices.storageLocation(QDesktopServices.DocumentsLocation),QFileDialog.ShowDirsOnly)
+            if localFileName:
+                localFileName += '/' + serverFileName
+        else:
+            localFileName = QFileDialog.getSaveFileName(self,"Save File",
+                    QDesktopServices.storageLocation(QDesktopServices.DocumentsLocation) + '/' + serverFileName,
+                    "All Files (*.*)")
         if localFileName:
             self.mftpCore.doDownload(serverFileName,localFileName)            
-        else:
-            self.onLog("Please Select localFileName")
+
     def onRefresh (self):
         self.mftpCore.doRefreshList()
         
@@ -531,6 +545,9 @@ class MFtpCUI(QEventLoop):
         if self.action == 'put':
             self.mftpCore.doUpload(self.filename)
             self.action = ''
+        if self.action == 'list':
+            self.mftpCore.doPrintList()
+            self.action = ''
     def onFailed(self):
         self.exit()        
         
@@ -538,14 +555,15 @@ class MFtpCUI(QEventLoop):
                         
 if __name__ == '__main__':
 
-    app = QApplication(sys.argv)
+    
     argparser = argparse.ArgumentParser(prog='mftp',description='MFTP - A micro ftp client',prefix_chars='-+')
     
-    argparser.add_argument('--user','-u',metavar = 'UserName',type=str,nargs=1,help="ftp user name")
-    argparser.add_argument('--site','-s',metavar = 'SiteName',type=str,nargs=1,help="ftp site name")
-    argparser.add_argument('-get',metavar = 'GetFileName',type=str,nargs='?',const='*',help="download a file, only -get without GetFileName stands for the latest file")
+    argparser.add_argument('-u','--user',metavar = 'UserName',type=str,nargs=1,help="ftp user name")
+    argparser.add_argument('-s','--site',metavar = 'SiteName',type=str,nargs=1,help="ftp site name")
+    argparser.add_argument('-get',metavar = 'GetFileName',type=str,nargs='?',const='*',help="download a file, only -get without GetFileName will get the latest file")
     argparser.add_argument('-put',metavar = 'PutFileName',type=str,nargs=1,help="upload a file")
-    argparser.add_argument('--auth','-a',nargs='?',const='y',help="retype authority information")
+    argparser.add_argument('-list',action='store_true',help="print file list on ftp server")
+    argparser.add_argument('-a','--auth',nargs='?',const='y',help="reenter account information")
     args = argparser.parse_args()
     
     
@@ -555,12 +573,19 @@ if __name__ == '__main__':
         isGUI = False
         #print "2",isGUI
 
-    if not args.get and not args.put:
+    if not args.get and not args.put and not args.list:
         isGUI = True
         #print "1",isGUI
-            
-    if args.get and args.put:
-        print "[ERROR] get and put conflit, specify one at a time"
+    c = 0
+    if args.get:
+        c += 1
+    if args.put:
+        c += 1
+    if args.list:
+        c += 1 
+                              
+    if c > 1:
+        print "[ERROR] get,put and list conflit, specify one at a time"
         exit()
     
     authPrompt = False
@@ -569,7 +594,12 @@ if __name__ == '__main__':
         
     if not args.auth is None:
         if args.auth == "reset":
-            MFtpAuth.resetAuth()     
+            MFtpAuth.resetAuth()
+                 
+    if isGUI:
+        app = QApplication([])
+    else:
+        app = QCoreApplication([])
     
     auth = MFtpAuth.getAuth(args.site,args.user,isGUI,None,authPrompt)
     if auth is None:
@@ -585,10 +615,13 @@ if __name__ == '__main__':
         sys.exit(app.exec_())
     else:
 
-        if args.get is None:
+        if args.put:
             action = 'put'
             filename = args.put
             filename = filename[0]
+        elif args.list:
+            action = 'list'
+            filename = None
         else:
             action = 'get'
             filename = args.get            
