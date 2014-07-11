@@ -417,8 +417,15 @@ class MFtpGUI(QMainWindow):
          
         ### status
         
-        self.statusBar().showMessage("Ready")
         
+        self.prgData = QProgressBar()
+        
+        self.lblMessage = QLabel()
+        
+        self.statusBar().addPermanentWidget(self.lblMessage,1)
+        self.statusBar().addPermanentWidget(self.prgData,2)
+        
+        self.lblMessage.setText("Ready")
         ### Window
         self.setWindowTitle("MFTP")
         self.resize(720,576)
@@ -428,6 +435,11 @@ class MFtpGUI(QMainWindow):
         self.mftpCore.log.connect(self.onLog)
         self.mftpCore.status.connect(self.onStatus)
         self.mftpCore.listupdate.connect(self.onListUpdate)
+        self.mftpCore.ftp.dataTransferProgress.connect(self.onProgress)
+    
+    def onProgress(self,v,m):
+        self.prgData.setMaximum(m)
+        self.prgData.setValue(v)
         
     def onAccount(self):
         auth = self.auth
@@ -447,7 +459,7 @@ class MFtpGUI(QMainWindow):
         self.txtLog.append(s)
         
     def onStatus(self,s):
-        self.statusBar().showMessage(s)
+        self.lblMessage.setText(s)
         
     def onUpload(self):
         fileName = QFileDialog.getOpenFileName(self,"Open File",".","All Files (*.*)")
