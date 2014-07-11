@@ -19,7 +19,7 @@ setup(
       name = 'mftp',
       version = '1.0',
       console = [{
-            'script' : '../mftp.py'
+            'script' : 'mftp.py'
              }
            ],     
       zipfile = None,
