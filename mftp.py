@@ -407,6 +407,8 @@ class MFtpGUI(QMainWindow):
         self.spliMain = QSplitter(Qt.Vertical)
         
         self.lstFiles = QListWidget(self)
+        self.lstFiles.setViewMode(QListView.IconMode)
+        self.lstFiles.setMovement(QListView.Static)
         self.txtLog = MFTextEdit(self)
         self.spliMain.addWidget(self.lstFiles)
         self.spliMain.addWidget(self.txtLog)
