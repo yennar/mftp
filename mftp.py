@@ -421,11 +421,12 @@ class MFtpGUI(QMainWindow):
         self.prgData = QProgressBar()
         self.lblMessage = QLabel()
         self.lblMessage.setFrameStyle(QFrame.NoFrame)
-        t = QLabel()
-        t.setFrameStyle(QFrame.NoFrame)
+        self.lblInfo = QLabel()
+        self.lblInfo.setFrameStyle(QFrame.NoFrame)
+        self.lblInfo.setAlignment(Qt.AlignRight)
         self.statusBar().addPermanentWidget(self.lblMessage,1)
         self.statusBar().addPermanentWidget(self.prgData,1)
-        self.statusBar().addPermanentWidget(t,2)
+        self.statusBar().addPermanentWidget(self.lblInfo,2)
         self.lblMessage.setText("Ready")
         ### Window
         self.setWindowTitle("MFTP")
@@ -455,7 +456,7 @@ class MFtpGUI(QMainWindow):
     def onConnect(self):
         
         self.mftpCore.doConnect(self.auth['Site'],21,self.auth['UserName'],self.auth['Password'])
-        
+        self.lblInfo.setText("%s@%s" % (self.auth['UserName'],self.auth['Site']))
     def onLog(self,s):
         self.txtLog.append(s)
         
