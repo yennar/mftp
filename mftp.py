@@ -419,7 +419,6 @@ class MFtpGUI(QMainWindow):
         
         
         self.prgData = QProgressBar()
-        self.prgData.setFrameStyle(QFrame.Panel | QFrame.Sunken)
         self.lblMessage = QLabel()
         self.lblMessage.setFrameStyle(QFrame.Panel | QFrame.Sunken)
         self.statusBar().addPermanentWidget(self.lblMessage,1)
