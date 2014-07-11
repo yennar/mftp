@@ -365,82 +365,7 @@ class MFtpAuth:
                     return None
         
         return {'Site' : siteName,'UserName':userName,'Password':passWord}            
-                                  
-                
-            
-                               
-class MFtpUI(QDialog):
-    def __init__(self):
-        super(MFtpUI, self).__init__()
-        
-        self.mftpCore = MFtpCore()
-        self.mftpCore.log.connect(self.onLog)
-        self.mftpCore.status.connect(self.onStatus)
-        self.mftpCore.listupdate.connect(self.onListUpdate)
-        
-        self.btnConnect = QPushButton("Connect")
-        self.btnConnect.clicked.connect(self.onConnect)
-
-        self.btnUpload = QPushButton("Upload")
-        self.btnUpload.clicked.connect(self.onUpload)
-        self.btnDownload = QPushButton("Download")
-        self.btnDownload.clicked.connect(self.onDownload)
-        self.btnRefresh = QPushButton("Refresh")
-        self.btnRefresh.clicked.connect(self.onRefresh)                        
-        self.lstFiles = QListWidget(self)
-        self.txtLog = QTextEdit()
-        self.txtStatus = QLineEdit()
-             
-        l = QVBoxLayout()
-        
-        l0 = QHBoxLayout()
-        l0.addWidget(self.btnConnect)
-        l0.addWidget(self.btnUpload)
-        l0.addWidget(self.btnDownload)
-        l0.addWidget(self.btnRefresh)
-        l0.addStretch()
-        
-        l.addLayout(l0)
-        l.addWidget(self.lstFiles)
-        l.addWidget(self.txtLog)
-        l.addWidget(self.txtStatus)
-        
-        self.setLayout(l)
-        
-    def onConnect(self):
-        self.mftpCore.doConnect("iftp.marvell.com",21,"zhoury","marvell@92")
-        
-    def onLog(self,s):
-        self.txtLog.append(s)
-        
-    def onStatus(self,s):
-        self.txtStatus.setText(s)
-        
-    def onUpload(self):
-        fileName = QFileDialog.getOpenFileName(self,"Open File",".","All Files (*.*)")
-        if fileName:
-            self.mftpCore.doUpload(fileName)
-            
-    def onDownload(self):
-        item = self.lstFiles.currentItem()
-        if item:
-            serverFileName = item.text()
-        else:
-            self.onLog("Please Select Item")
-            return
-            
-        localFileName = QFileDialog.getSaveFileName(self,"Save File",serverFileName,"All Files (*.*)")
-        if localFileName:
-            self.mftpCore.doDownload(serverFileName,localFileName)            
-        else:
-            self.onLog("Please Select localFileName")
-    def onRefresh (self):
-        self.mftpCore.doRefreshList()
-        
-    def onListUpdate(self,d):
-        self.lstFiles.clear()
-        for i in d.keys():
-            self.lstFiles.addItem(i)       
+                           
 
 class MFTextEdit(QTextEdit):
     def __init__(self,parent=None):
@@ -545,8 +470,19 @@ class MFtpGUI(QMainWindow):
         
     def onListUpdate(self,d):
         self.lstFiles.clear()
+        QDir(QDir.tempPath()).mkdir('mftp')
+        temp_path = QDir.tempPath() + "/mftp/"
+        
+        icp = QFileIconProvider()
         for i in d.keys():
-            self.lstFiles.addItem(i) 
+            f = QFile(temp_path + i)
+            f.open(QIODevice.WriteOnly)
+            f.close()
+            item = QListWidgetItem (
+                   icp.icon(QFileInfo(f)),
+                   i
+                )
+            self.lstFiles.addItem(item) 
 
 class MFtpCUI(QEventLoop):
     
