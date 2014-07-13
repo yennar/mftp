@@ -620,6 +620,7 @@ if __name__ == '__main__':
     argparser.add_argument('-put',metavar = 'PutFileName',type=str,nargs=1,help="upload a file")
     argparser.add_argument('-list',action='store_true',help="print file list on ftp server")
     argparser.add_argument('-a','--auth',nargs='?',const='y',help="reenter account information")
+    argparser.add_argument('-nogui',action='store_true',help="donot start the gui")
     args = argparser.parse_args()
     
     
@@ -628,10 +629,15 @@ if __name__ == '__main__':
     if not args.user is None:
         isGUI = False
         #print "2",isGUI
-
+    
     if not args.get and not args.put and not args.list:
         isGUI = True
         #print "1",isGUI
+    
+    if args.nogui:
+        isGUI = False
+                
+    
     c = 0
     if args.get:
         c += 1
@@ -651,7 +657,9 @@ if __name__ == '__main__':
     if not args.auth is None:
         if args.auth == "reset":
             MFtpAuth.resetAuth()
-                 
+
+
+                         
     if isGUI:
         app = QApplication([])
     else:
@@ -662,7 +670,10 @@ if __name__ == '__main__':
         exit()
     elif args.user is None:
         MFtpAuth.saveAuth(auth)
-    
+
+    if not args.get and not args.put and not args.list and isGUI == False:
+        exit()
+            
     #print "3",isGUI
     
     if isGUI:
