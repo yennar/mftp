@@ -8,12 +8,11 @@ Usage:
 from setuptools import setup
 
 APP = ['mftp.py']
-DATA_FILES = ['qt.conf','app_icon.icns']
+DATA_FILES = ['qt.conf']
 OPTIONS = {
     'argv_emulation': True,
     'optimize' : 2,
-    'iconfile':'app_icon.icns',
-    'plist': {'CFBundleShortVersionString':'0.1.0','CFBundleTypeIconFile':'app_icon.icns'},
+    'plist': {'CFBundleShortVersionString':'0.1.0'},
     'includes': ['sip', 'PyQt4._qt', 'PyQt4.QtCore', 'PyQt4.QtGui', 'PyQt4.QtNetwork'],
     'excludes': ['PyQt4.QtDesigner', 'PyQt4.QtOpenGL', 'PyQt4.QtScript', 'PyQt4.QtSql', 'PyQt4.QtTest', 'PyQt4.QtWebKit', 'PyQt4.QtXml', 'PyQt4.phonon']          
     }
