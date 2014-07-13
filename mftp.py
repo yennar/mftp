@@ -49,31 +49,44 @@ class MFtpCore(QObject):
     ready = pyqtSignal()
     busy = pyqtSignal()
     failed = pyqtSignal()
+    loginOK = pyqtSignal()
+    loginFailed = pyqtSignal()
+    progress = pyqtSignal(int,int)
     
     ListFile = '.mftp_list_file'
     TimeOutThreadHold = 86400000
     
     def __init__(self):
         super(MFtpCore, self).__init__()
+        self.ftpInit()
+   
+    def ftpInit(self):
         self.ftp = QFtp()
         self.core_state = self.WaitingForConnection
         self.filelist = ''
         self.filelist_temp = ''
         self.wFileHandle = None
-        
+                
         self.ftp.commandFinished.connect(self.onCommandFinished)
         self.ftp.commandStarted.connect(self.onCommandStarted)
         self.ftp.done.connect(self.onDone)
         self.ftp.stateChanged.connect(self.onStateChanged)
         self.ftp.readyRead.connect(self.onReadyRead)
+        self.ftp.dataTransferProgress.connect(self.onProgress)        
         
-    def doAbortAll(self):
-        self.ftp.abort()
+    def doDisconnect(self):
+        if self.ftp:
+            self.ftp.abort()
+            self.ftp.deleteLater()
+            self.ftp = None
+        self.ftpInit()
+        self.loginFailed.emit() 
+        self.log.emit("[~] Closed")   
+        self.status.emit("Ready") 
 
     def doConnect(self,Host,Port,UserName,Password):
         if self.core_state != self.WaitingForConnection:
-            return
-        self.doAbortAll()       
+            return      
         self.ftp.connectToHost(Host,Port)
         self.UserName = UserName
         self.Password = Password
@@ -164,10 +177,11 @@ class MFtpCore(QObject):
                 self.ftp.get(self.ListFile)
                 self.log.emit("[~] Get file list")
                 self.core_state = self.WaitingForListFileDownLoadDone
+                self.loginOK.emit()
             if t == 'commandFinished' and e:
                 self.log.emit("[~] Login failed, check your user name and password")
-                self.ftp.close()
-                self.core_state = self.WaitingForConnection
+                self.status.emit("Failed")
+                self.doDisconnect()
                 
         elif self.core_state == self.WaitingForListFileDownLoadDone:
                                   
@@ -268,7 +282,9 @@ class MFtpCore(QObject):
             if len(item) !=2:
                 continue
             filename = item[0]
-            print filename                    
+            print filename       
+    def onProgress(self,x,y):
+        self.progress.emit(x,y)             
 
 class MFtpAuth:
     
@@ -394,8 +410,9 @@ class MFtpGUI(QMainWindow):
 
         self.btnAccount = QAction(QIcon(":account.png"),"Account",self.tbrMain)
         self.btnAccount.triggered.connect(self.onAccount)        
-        self.btnConnect = QAction(QIcon(":connect.png"),"Connect",self.tbrMain)
-        self.btnConnect.triggered.connect(self.onConnect)
+        self.btnConnectOrDisconnect = QAction(QIcon(":connect.png"),"Connect",self.tbrMain)
+        self.btnConnectOrDisconnect.triggered.connect(self.onConnectOrDisconnect)
+        self.bConnectOrDisconnect = True
         self.btnUpload = QAction (QIcon(":upload.png"),"Upload",self.tbrMain)
         self.btnUpload.triggered.connect(self.onUpload)
         self.btnDownload = QAction(QIcon(":download.png"),"Download",self.tbrMain)
@@ -404,7 +421,7 @@ class MFtpGUI(QMainWindow):
         self.btnRefresh.triggered.connect(self.onRefresh)
                
         self.tbrMain.addAction(self.btnAccount)       
-        self.tbrMain.addAction(self.btnConnect)
+        self.tbrMain.addAction(self.btnConnectOrDisconnect)
         self.tbrMain.addSeparator()
         self.tbrMain.addAction(self.btnUpload)
         self.tbrMain.addAction(self.btnDownload)
@@ -445,8 +462,39 @@ class MFtpGUI(QMainWindow):
         self.mftpCore.log.connect(self.onLog)
         self.mftpCore.status.connect(self.onStatus)
         self.mftpCore.listupdate.connect(self.onListUpdate)
-        self.mftpCore.ftp.dataTransferProgress.connect(self.onProgress)
+        self.mftpCore.progress.connect(self.onProgress)
+        self.mftpCore.loginOK.connect(self.onLoginOK)
+        self.mftpCore.loginFailed.connect(self.onLoginFailed)
+        self.mftpCore.busy.connect(self.onBusy)
+        self.mftpCore.ready.connect(self.onReady)
+        
+        self.onBusy()
     
+    def onBusy(self):
+        self.btnUpload.setEnabled(False)
+        self.btnDownload.setEnabled(False)
+        self.btnRefresh.setEnabled(False)  
+        self.lstFiles.setEnabled(False)
+
+    def onReady(self):
+        self.btnUpload.setEnabled(True)
+        self.btnDownload.setEnabled(True)
+        self.btnRefresh.setEnabled(True) 
+        self.lstFiles.setEnabled(True)
+                
+    def onLoginOK(self):
+        self.bConnectOrDisconnect = False
+        self.btnConnectOrDisconnect.setIcon(QIcon(":disconnect.png"))
+        self.btnConnectOrDisconnect.setIconText("Disconnect")
+        self.btnConnectOrDisconnect.setText("Disconnect")
+        
+    def onLoginFailed(self):
+        self.bConnectOrDisconnect = True
+        self.btnConnectOrDisconnect.setIcon(QIcon(":connect.png"))
+        self.btnConnectOrDisconnect.setIconText("Connect")        
+        self.btnConnectOrDisconnect.setText("Connect") 
+        self.onBusy()
+            
     def onProgress(self,v,m):
         self.prgData.setMaximum(m)
         self.prgData.setValue(v)
@@ -461,10 +509,17 @@ class MFtpGUI(QMainWindow):
             MFtpAuth.saveAuth(auth)
             self.auth = auth        
             
-    def onConnect(self):
-        
-        self.mftpCore.doConnect(self.auth['Site'],21,self.auth['UserName'],self.auth['Password'])
-        self.lblInfo.setText("%s@%s" % (self.auth['UserName'],self.auth['Site']))
+    def onConnectOrDisconnect(self):
+        if self.bConnectOrDisconnect:       
+            self.mftpCore.doConnect(self.auth['Site'],21,self.auth['UserName'],self.auth['Password'])
+            self.lblInfo.setText("%s@%s" % (self.auth['UserName'],self.auth['Site']))
+        else:       
+            self.mftpCore.doDisconnect()
+            self.lblInfo.setText("")
+                
+    def onDisconnect(self):
+        if self.mftpCore:
+            self.mftpCore = MFtpCore()
     def onLog(self,s):
         self.txtLog.append(s)
         
