@@ -53,7 +53,7 @@ class MFtpCore(QObject):
     loginFailed = pyqtSignal()
     progress = pyqtSignal(int,int)
     
-    ListFile = '.mftp_list_file'
+    ListFileBase = '.mftp_list_file'
     TimeOutThreadHold = 86400000
     
     def __init__(self):
@@ -174,6 +174,7 @@ class MFtpCore(QObject):
         
         elif self.core_state == self.WaitingForLoggedIn:
             if t == 'commandFinished' and not e:
+                self.ListFile = self.ListFileBase + self.UserName
                 self.ftp.get(self.ListFile)
                 self.log.emit("[~] Get file list")
                 self.core_state = self.WaitingForListFileDownLoadDone
