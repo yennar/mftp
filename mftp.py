@@ -24,7 +24,8 @@ class MFtpCore(QObject):
                      'WaitingForFileGetsDone',
                      'WaitingForFilePutsDone',
                      'WaitingForOp',
-                     'WaitingForConnection']
+                     'WaitingForConnection',
+                     'WaitingForInitListFileUploadDone']
     
     Unconnected = 0
     HostLookup = 1
@@ -42,6 +43,7 @@ class MFtpCore(QObject):
     WaitingForFilePutsDone = 5
     WaitingForOp = 6
     WaitingForConnection = 7
+    WaitingForInitListFileUploadDone = 8
     
     log = pyqtSignal(str)
     status = pyqtSignal(str)
@@ -56,8 +58,8 @@ class MFtpCore(QObject):
     ListFileBase = '.mftp_list_file'
     TimeOutThreadHold = 86400000
     
-    def __init__(self):
-        super(MFtpCore, self).__init__()
+    def __init__(self,parent = None):
+        QObject.__init__(self,parent)
         self.ftpInit()
    
     def ftpInit(self):
@@ -145,7 +147,8 @@ class MFtpCore(QObject):
                 self.log.emit("[%d] Command Finished %s" % (i,str(s)))
             except:
                 self.log.emit("[%d] Command Failed" % i)
-            self.failed.emit()      
+            if self.core_state != self.WaitingForListFileDownLoadDone:
+                self.failed.emit()      
         self.mainFSM('commandFinished',i,e)
         
     def onCommandStarted(self,i):
@@ -196,9 +199,20 @@ class MFtpCore(QObject):
                     self.filelist = self.filelist_temp
                     self.filelist_temp = ''
                     self.processList()
+                    self.core_state = self.WaitingForOp
+                    self.log.emit("[~] Ready")                    
+                else:
+                    self.log.emit("[~] No list file in the server,create new one")
+                    self.ftp.put("",self.ListFile)
+                    self.core_state = self.WaitingForInitListFileUploadDone   
                     
+        elif self.core_state == self.WaitingForInitListFileUploadDone:
+            if t == 'commandFinished' and not e:     
+                self.filelist = ''
+                self.filelist_temp = ''
+                self.processList()
                 self.core_state = self.WaitingForOp
-                self.log.emit("[~] Ready")
+                self.log.emit("[~] Ready")    
                                 
         elif self.core_state == self.WaitingForOp:
             if t == 'uploadFile':
@@ -459,7 +473,7 @@ class MFtpGUI(QMainWindow):
         self.resize(480,380)
         
         ### Core        
-        self.mftpCore = MFtpCore()
+        self.mftpCore = MFtpCore(self)
         self.mftpCore.log.connect(self.onLog)
         self.mftpCore.status.connect(self.onStatus)
         self.mftpCore.listupdate.connect(self.onListUpdate)
