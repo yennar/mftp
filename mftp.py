@@ -372,14 +372,14 @@ class MFtpAuth:
                 
         if NeedPropmt:
             if isGUI:
-                 r = QXInputDialog.getMulti(
+                r = QXInputDialog.getMulti(
                     parent,"Account Settings",
                     "Enter Authority",
                     ["Site","UserName","Password*"],
                     {'Site' : siteName,'UserName':userName}
                  )
                  
-                 return r
+                return r
             else:
                 if siteName is None:
                     siteName = raw_input("Site Name :")
@@ -413,7 +413,8 @@ class MFTextEdit(QTextEdit):
             
     def sizeHint(self):          
         return QSize(400, 120);
-                
+    
+          
 class MFtpGUI(QMainWindow):
     
     def __init__(self,auth):
@@ -482,6 +483,8 @@ class MFtpGUI(QMainWindow):
         self.mftpCore.loginFailed.connect(self.onLoginFailed)
         self.mftpCore.busy.connect(self.onBusy)
         self.mftpCore.ready.connect(self.onReady)
+        
+        self.setAcceptDrops(True)
         
         self.onBusy()
     
@@ -584,6 +587,40 @@ class MFtpGUI(QMainWindow):
                 )
             self.lstFiles.addItem(item) 
 
+    def canDrop(self,event):
+        if event.mimeData().hasUrls() and self.lstFiles.isEnabled() and len(event.mimeData().urls()) == 1:
+            url = event.mimeData().urls()[0]
+            filename = url.toLocalFile()
+            fi = QFileInfo(filename)
+            if fi.isFile():            
+                return True
+        return False
+        
+    def dragEnterEvent(self,event):
+        if self.canDrop(event):
+            url = event.mimeData().urls()[0]
+            #print 'dragEnterEvent',url.toLocalFile()
+            event.setDropAction(Qt.CopyAction)
+            event.acceptProposedAction()    
+            event.accept()
+                
+    def dragMoveEvent(self, event):
+        if self.canDrop(event):
+            event.setDropAction(Qt.CopyAction)
+            event.accept()
+        else:
+            event.ignore()
+            
+    def dropEvent(self,event):
+        if self.canDrop(event):
+            url = event.mimeData().urls()[0]
+            filename = url.toLocalFile()
+            self.mftpCore.doUpload(filename)
+            event.acceptProposedAction()
+            
+    def dropMimeData (self,index,data,action):
+        return True
+    
 class MFtpCUI(QEventLoop):
     
     def __init__(self,auth,action,filename):
@@ -624,7 +661,7 @@ class MFtpCUI(QEventLoop):
               
                         
 if __name__ == '__main__':
-
+    
     
     argparser = argparse.ArgumentParser(prog='mftp',description='MFTP - A micro ftp client',prefix_chars='-+')
     
@@ -692,6 +729,7 @@ if __name__ == '__main__':
     
     if isGUI:
         w = MFtpGUI(auth)
+        #w = MFListWidget()
         w.show()
         sys.exit(app.exec_())
     else:
